@@ -5,7 +5,22 @@ from typing import List, Tuple, Optional
 import streamlit as st
 
 # Google Sheets 사용 여부 확인
-USE_GSHEETS = os.getenv("USE_GSHEETS", "false").lower() == "true" or hasattr(st, "secrets") and "gcp_service_account" in st.secrets
+def check_use_gsheets():
+    """Google Sheets 사용 여부를 안전하게 확인"""
+    # 환경 변수로 명시적으로 설정된 경우
+    if os.getenv("USE_GSHEETS", "").lower() == "true":
+        return True
+
+    # Streamlit secrets가 있는 경우
+    try:
+        if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
+            return True
+    except Exception:
+        pass
+
+    return False
+
+USE_GSHEETS = check_use_gsheets()
 
 if USE_GSHEETS:
     import gspread
