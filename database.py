@@ -321,15 +321,33 @@ class GoogleSheetsDatabase(Database):
         """모든 지출 내역 조회"""
         try:
             records = self.worksheet.get_all_records()
-            expenses = [
-                (int(r['id']), r['date'], r['category'], int(r['amount']), r['place'], r['description'])
-                for r in records
-            ]
+            expenses = []
+
+            for r in records:
+                try:
+                    # 각 필드를 안전하게 변환
+                    expense_id = int(r.get('id', 0))
+                    date = str(r.get('date', ''))
+                    category = str(r.get('category', ''))
+                    amount = int(r.get('amount', 0))
+                    place = str(r.get('place', ''))
+                    description = str(r.get('description', ''))
+
+                    expenses.append((expense_id, date, category, amount, place, description))
+                except (ValueError, TypeError) as e:
+                    # 개별 레코드 변환 실패 시 건너뛰기
+                    print(f"레코드 변환 실패: {r}, 에러: {e}")
+                    continue
+
             # 날짜 역순 정렬
             expenses.sort(key=lambda x: (x[1], x[0]), reverse=True)
             return expenses
         except Exception as e:
-            print(f"Error getting expenses: {e}")
+            error_msg = f"Google Sheets에서 데이터를 가져오는 중 에러 발생: {str(e)}"
+            print(error_msg)
+            # Streamlit에 에러 표시
+            import streamlit as st
+            st.error(error_msg)
             return []
 
     def get_expenses_by_date_range(self, start_date: str, end_date: str) -> List[Tuple]:
