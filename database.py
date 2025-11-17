@@ -227,10 +227,21 @@ class GoogleSheetsDatabase(Database):
         )
 
         self.client = gspread.authorize(credentials)
-        self.sheet_url = st.secrets.get("sheet_url", "")
+
+        # sheet_url 가져오기 (여러 방법 시도)
+        self.sheet_url = None
+        if "sheet_url" in st.secrets:
+            self.sheet_url = st.secrets["sheet_url"]
+        elif hasattr(st.secrets, "sheet_url"):
+            self.sheet_url = st.secrets.sheet_url
 
         if not self.sheet_url:
-            raise ValueError("sheet_url이 Streamlit secrets에 설정되지 않았습니다.")
+            available_keys = list(st.secrets.keys()) if hasattr(st.secrets, 'keys') else []
+            raise ValueError(
+                f"sheet_url이 Streamlit secrets에 설정되지 않았습니다.\n"
+                f"사용 가능한 secrets 키: {available_keys}\n"
+                f"TOML 파일에서 sheet_url이 [gcp_service_account] 섹션 밖에 있는지 확인하세요."
+            )
 
         self.spreadsheet = self.client.open_by_url(self.sheet_url)
         self.worksheet = self.spreadsheet.sheet1
