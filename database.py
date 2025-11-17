@@ -245,17 +245,38 @@ class GoogleSheetsDatabase(Database):
 
         # sheet_url 가져오기 (여러 방법 시도)
         self.sheet_url = None
+
+        # 디버깅: secrets 구조 확인
+        debug_info = []
+        try:
+            all_keys = list(st.secrets.keys())
+            debug_info.append(f"최상위 키들: {all_keys}")
+
+            # 각 최상위 키의 타입 확인
+            for key in all_keys:
+                value = st.secrets[key]
+                if hasattr(value, 'keys'):
+                    debug_info.append(f"  {key} (섹션): {list(value.keys())}")
+                else:
+                    debug_info.append(f"  {key} (값): {type(value).__name__}")
+        except Exception as e:
+            debug_info.append(f"secrets 구조 확인 중 에러: {str(e)}")
+
+        # sheet_url 찾기
         if "sheet_url" in st.secrets:
             self.sheet_url = st.secrets["sheet_url"]
         elif hasattr(st.secrets, "sheet_url"):
             self.sheet_url = st.secrets.sheet_url
 
         if not self.sheet_url:
-            available_keys = list(st.secrets.keys()) if hasattr(st.secrets, 'keys') else []
             raise ValueError(
-                f"sheet_url이 Streamlit secrets에 설정되지 않았습니다.\n"
-                f"사용 가능한 secrets 키: {available_keys}\n"
-                f"TOML 파일에서 sheet_url이 [gcp_service_account] 섹션 밖에 있는지 확인하세요."
+                f"sheet_url이 Streamlit secrets에 설정되지 않았습니다.\n\n"
+                f"디버깅 정보:\n" + "\n".join(debug_info) + "\n\n"
+                f"해결 방법:\n"
+                f"1. Streamlit Cloud Settings > Secrets에서\n"
+                f"2. sheet_url이 [gcp_service_account] 섹션 '밖에' 있는지 확인\n"
+                f"3. sheet_url 앞에 공백이나 탭이 없는지 확인\n"
+                f"4. 형식: sheet_url = \"https://docs.google.com/...\""
             )
 
         self.spreadsheet = self.client.open_by_url(self.sheet_url)
