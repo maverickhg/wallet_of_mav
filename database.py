@@ -262,10 +262,15 @@ class GoogleSheetsDatabase(Database):
         except Exception as e:
             debug_info.append(f"secrets 구조 확인 중 에러: {str(e)}")
 
-        # sheet_url 찾기
+        # sheet_url 찾기 (여러 위치에서 시도)
         if "sheet_url" in st.secrets:
+            # 최상위 레벨에 있는 경우
             self.sheet_url = st.secrets["sheet_url"]
+        elif "gcp_service_account" in st.secrets and "sheet_url" in st.secrets["gcp_service_account"]:
+            # gcp_service_account 섹션 안에 있는 경우
+            self.sheet_url = st.secrets["gcp_service_account"]["sheet_url"]
         elif hasattr(st.secrets, "sheet_url"):
+            # 속성으로 접근하는 경우
             self.sheet_url = st.secrets.sheet_url
 
         if not self.sheet_url:
